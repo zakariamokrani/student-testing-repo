@@ -6,30 +6,38 @@ from sqlalchemy.orm import declarative_base
 # Get database URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Add validation
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-# Optional: Fix common URL issues (like Heroku's postgres:// URLs)
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+# Ensure we're using an async driver
+if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+    # Replace common sync drivers with asyncpg
+    if "+psycopg2" in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("+psycopg2", "+asyncpg")
+    elif "://" in DATABASE_URL and "+" not in DATABASE_URL.split("://")[0]:
+        # No driver specified, add asyncpg
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 
-# Create an asynchronous engine with connection pooling for better performance under load.
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_size=5,       # Number of connections to keep open
-    max_overflow=10    # Extra connections allowed during traffic spikes
-)
+print(f"Connecting with: {DATABASE_URL}")  # For debugging
 
-# Factory for asynchronous sessions.
+try:
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_size=5,
+        max_overflow=10
+    )
+except Exception as e:
+    print(f"Error creating engine: {e}")
+    raise
+
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
     class_=AsyncSession,
 )
 
-# Declarative base class for ORM models.
 Base = declarative_base()
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
