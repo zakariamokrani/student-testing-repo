@@ -43,3 +43,11 @@ async def root():
         "status": "Online",
         "message": "Welcome to Student Environment API. Chat system is ready!"
     }
+
+# Add this new endpoint for Railway health checks
+@app.get("/health", tags=["Health Check"])
+async def health_check():
+    return {
+        "status": "healthy",
+        "database": "connected"
+    }
