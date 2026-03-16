@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import declarative_base
 
 # TODO: Replace the following credentials with your PostgreSQL configuration.
-DATABASE_URL = " "
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create an asynchronous engine with connection pooling for better performance under load.
 engine = create_async_engine(
